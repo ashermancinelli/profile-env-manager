@@ -18,22 +18,18 @@ Profile* Profile::from(json js)
 {
   char* name = strdup(js["name"].get<std::string>().c_str());
   char* bin = strdup(js["bin"].get<std::string>().c_str());
+  auto p = new Profile(name, bin);
 
   if (js.find("syscalls") != js.end())
   {
-    puts("Found system calls");
-  }
-
-  if (js.find("env") != js.end())
-  {
-    puts("Found env vars");
+    p->syscalls = js["syscalls"].get<vector<string>>();
   }
 
   if (js.find("args") != js.end())
   {
-    puts("Found args");
+    p->args = js["args"].get<vector<string>>();
   }
-  return new Profile(name, bin);
+  return p;
 }
 
 Profile* Profile::from(std::ifstream f)
@@ -57,23 +53,31 @@ void Profile::run() const
   printf("Loading profile %s\n", name);
 
   auto args = c_str_ar(this->args);
-  auto envvars = c_str_ar(this->envvars);
 
   if (syscalls.size() == 0)
   {
     auto sys = c_str_ar(this->syscalls);
-    for(int i=0; i < syscalls.size(); i+=2)
+    for(int i=0; i < syscalls.size(); i++)
     {
-      setenv(sys[i], sys[i+1], true);
+      system(sys[i]);
     }
   }
 
-  execve(bin, args, envvars);
+  execvp(bin, args);
 }
 
-void Profile::show() const
+void Profile::show(verbosity v) const
 {
   printf("name:\t%s\nbin:\t%s\n", this->name, this->bin);
+
+  if (v > verbosity::quiet)
+  {
+    printf("\nbinary arguments:");
+    for(auto c : args) printf("\n\t%s", c.c_str());
+
+    printf("\nsystem calls:");
+    for(auto c : syscalls) printf("\n\t%s", c.c_str());
+  }
 }
 
 }

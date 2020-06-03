@@ -18,6 +18,13 @@ using nlohmann::json;
 namespace profile
 {
 
+enum verbosity
+{
+  quiet,
+  medium,
+  loud,
+};
+
 struct Profile
 {
   // Name of profile
@@ -38,7 +45,7 @@ struct Profile
   Profile(const char* name, const char* bin);
   Profile() : Profile("DEFAULT_PROFILE_NAME", "/bin/bash") {}
   void run() const;
-  void show() const;
+  void show(verbosity v=quiet) const;
   static Profile* from(std::ifstream);
   static Profile* from(json);
 };

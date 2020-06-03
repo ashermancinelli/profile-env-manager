@@ -48,7 +48,7 @@ int main(int argc, char** argv)
           });
       if (p == end(profiles)) { puts("Profile not found."); return 1; }
 
-      (*p)->show();
+      (*p)->show(verbosity::loud);
       return 0;
     }
     else if (s.compare("avail") == 0)
