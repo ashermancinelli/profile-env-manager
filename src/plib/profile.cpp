@@ -36,7 +36,7 @@ Profile* Profile::from(json js)
   return new Profile(name, bin);
 }
 
-Profile* Profile::from(std::ifstream& f)
+Profile* Profile::from(std::ifstream f)
 {
   json js;
   if (f)

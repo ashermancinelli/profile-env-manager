@@ -39,7 +39,7 @@ struct Profile
   Profile() : Profile("DEFAULT_PROFILE_NAME", "/bin/bash") {}
   void run() const;
   void show() const;
-  static Profile* from(std::ifstream&);
+  static Profile* from(std::ifstream);
   static Profile* from(json);
 };
 

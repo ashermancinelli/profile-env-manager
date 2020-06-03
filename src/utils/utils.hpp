@@ -3,19 +3,26 @@
 
 #include <vector>
 using std::vector;
-
-#include <boost/filesystem>
-using boost::filesystem;
-
+#include <string>
+using std::string;
+#include <dirent.h>
+#include <cstdlib>
+#include <cassert>
 #include <profile.hpp>
 
 namespace profile
 {
 
-static constexpr vector<string> default_paths =
+static const vector<string> default_paths =
 {
+  "/usr/local/share/profiles/",
+  "/usr/share/profiles/",
+  "/share/profiles/",
+  "~/.local/share/profiles/",
+  "~/.local/profiles/",
   "~/.profiles/",
-}
+  ".",
+};
 
 void usage();
 vector<Profile*> init_profiles();
