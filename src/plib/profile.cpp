@@ -20,14 +20,19 @@ Profile* Profile::from(json js)
   char* bin = strdup(js["bin"].get<std::string>().c_str());
   auto p = new Profile(name, bin);
 
-  if (js.find("syscalls") != js.end())
+  if (js.find("envvars") != js.end())
   {
-    p->syscalls = js["syscalls"].get<vector<string>>();
+    p->envvars = js["envvars"].get<vector<pair<string, string>>>();
   }
 
-  if (js.find("args") != js.end())
+  if (js.find("commands") != js.end())
   {
-    p->args = js["args"].get<vector<string>>();
+    p->commands = js["commands"].get<vector<string>>();
+  }
+
+  if(js.find("dependencies") != js.end())
+  {
+    p->dependencies = js["dependencies"].get<vector<string>>();
   }
   return p;
 }
@@ -35,11 +40,20 @@ Profile* Profile::from(json js)
 Profile* Profile::from(std::ifstream f)
 {
   json js;
-  if (f)
-  {
-    f >> js;
-  }
+  if (f) f >> js;
   return from(js);
+}
+
+Profile* Profile::from(const string& s)
+{ 
+  if (is_file(s))
+    return from(std::ifstream(s));
+
+  auto path = resolve_path(s);
+  if (path)
+    return from(std::ifstream(*path));
+
+  throw std::runtime_error("Could not find dependency");
 }
 
 Profile::Profile(const char* name, const char* bin)
@@ -48,35 +62,50 @@ Profile::Profile(const char* name, const char* bin)
   this->bin = strdup(bin);
 }
 
-void Profile::run() const
+void Profile::set_sys(Profile* p)
 {
-  printf("Loading profile %s\n", name);
-
-  auto args = c_str_ar(this->args);
-
-  if (syscalls.size() == 0)
+  for (const auto [var, val] : p->envvars)
   {
-    auto sys = c_str_ar(this->syscalls);
-    for(int i=0; i < syscalls.size(); i++)
-    {
-      system(sys[i]);
-    }
+    setenv(var.c_str(), val.c_str(), 1);
   }
+}
 
-  execvp(bin, args);
+void Profile::set_sys(const string& profile)
+{
+  Profile* p = Profile::from(profile);
+  set_sys(p);
+}
+
+void Profile::run()
+{
+  set_sys(this);
+  for(const auto& dep : dependencies)
+    set_sys(dep);
+
+  execvp(bin, NULL);
 }
 
 void Profile::show(verbosity v) const
 {
-  printf("name:\t%s\nbin:\t%s\n", this->name, this->bin);
-
-  if (v > verbosity::quiet)
+  if (v == verbosity::quiet)
   {
-    printf("\nbinary arguments:");
-    for(auto c : args) printf("\n\t%s", c.c_str());
+    printf("\t%s\n", this->name);
+  }
+  else
+  {
+    printf("name:\t%s\nbin:\t%s\n", this->name, this->bin);
 
-    printf("\nsystem calls:");
-    for(auto c : syscalls) printf("\n\t%s", c.c_str());
+    printf("\nenvironment variables:");
+    for(const auto [var, val] : envvars)
+      printf("\n\t%s = %s", var.c_str(), val.c_str());
+
+    printf("\ncommands:");
+    for(const auto cmd : commands)
+      printf("\n\t%s", cmd.c_str());
+
+    printf("\ndependencies:");
+    for(const auto dep : dependencies)
+      printf("\n\t%s", dep.c_str());
   }
 }
 

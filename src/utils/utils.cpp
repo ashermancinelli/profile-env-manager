@@ -1,6 +1,7 @@
 #include <utils.hpp>
 
 #include <sys/utsname.h>
+#include <sys/stat.h>
 
 namespace profile
 {
@@ -20,6 +21,13 @@ bool is_directory(const std::string& pth)
   dp = opendir(pth.c_str());
   if (dp == NULL) return false;
   return true;
+}
+
+bool is_file(const std::string& f)
+{
+  struct stat path_stat;
+  stat(f.c_str(), &path_stat);
+  return S_ISREG(path_stat.st_mode);
 }
 
 string expand_path(string pth)
@@ -80,6 +88,8 @@ vector<Profile*> init_profiles()
   bool found_any = false;
   for (const string& path_str : default_paths)
   {
+    // Add the nodename to the path so that in shared directory
+    // environments, the profiles may differ from node to node
     string path = expand_path(path_str) + nodename;
     if(!is_directory(path)) continue;
     directory_iterator di(path);
@@ -88,11 +98,36 @@ vector<Profile*> init_profiles()
     {
       const std::string& leaf = di.next();
       if (!has_ext(leaf, ".json")) continue;
-      char* dup = strdup(leaf.c_str());
-      ps.push_back(Profile::from(std::ifstream(dup)));
+      ps.push_back(
+        Profile::from(
+          std::ifstream(
+            strdup(leaf.c_str()))));
     }
   }
   return ps;
+}
+
+optional<string> resolve_path(const string fn)
+{
+  auto home = getenv("PROFILEHOME");
+  if (home != nullptr)
+  {
+    if (is_file(home + fn))
+    {
+      return string(home + fn);
+    }
+  }
+  else
+  {
+    for (const string& path_str : default_paths)
+    {
+      if (is_file(path_str + fn))
+      {
+        return path_str + fn;
+      }
+    }
+  }
+  return {};
 }
 
 }

@@ -3,8 +3,9 @@ cmake_minimum_required (VERSION 3.11)
 
 project(myproj CXX)
 
-set(CMAKE_CXX_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 include(FetchContent)
 set(FETCHCONTENT_QUIET off)
@@ -20,3 +21,4 @@ if(NOT json_POPULATED)
 endif()
 
 add_subdirectory(src)
+install(TARGETS profile)

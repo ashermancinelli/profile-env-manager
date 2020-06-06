@@ -9,6 +9,8 @@ using std::string;
 using std::begin;
 using std::end;
 
+#include <iostream>
+
 #include <profile.hpp>
 #include <utils.hpp>
 
@@ -19,7 +21,13 @@ int main(int argc, char** argv)
   if(argc==1) { usage(); return 1; }
 
   vector<string> args(argv+1, argv+argc);
-  auto profiles = init_profiles();
+  vector<Profile*> profiles;
+  try{
+    profiles = init_profiles();
+  } catch (nlohmann::detail::type_error e)
+  {
+    std::cout << "Error: " << e.what() << "\n";
+  }
 
   for (int i=0; i<args.size(); i++)
   {
@@ -36,6 +44,7 @@ int main(int argc, char** argv)
       if (p == end(profiles)) { puts("Profile not found."); return 1; }
 
       (*p)->run();
+
       return 0;
     }
     else if (s.compare("show") == 0)
